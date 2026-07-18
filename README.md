@@ -5,12 +5,8 @@ The hero holds the line; enemies charge as you burn tokens; your rolling
 5-hour window is the level — boss at 85%, **STAGE CLEAR** at 100%.
 100% local: reads `~/.claude/projects` transcripts, nothing leaves your machine.
 
-```
-  KILLS 023                          64%
-   🏃🔫 · · · ➤       👥    👥    👾
- ▐████████████████░░░░░░░░░░░▌
- opus-4.8 · 587k · 3h48m
-```
+<img width="298" height="159" alt="image" src="https://github.com/user-attachments/assets/37b83e0f-4e7b-4762-b185-dd7d93524627" />
+
 
 ## Install
 
@@ -33,8 +29,9 @@ code --install-extension statspro-0.1.0.vsix
 
 ## Classic sprites (optional)
 
-Ships with original pixel art. For the classic NES look, download these three
-sheets yourself (search "NES Contra" on a sprite archive) and paste them into
+Ships with original pixel art.
+Download it here: https://limewire.com/d/6Z7Gm#ZH9xmh8Ep5
+and paste them into
 `~/.statspro/assets/`:
 
 ```
