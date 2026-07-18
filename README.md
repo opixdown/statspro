@@ -1,25 +1,44 @@
 # StatsPro — a retro token health bar for Claude Code
 
-StatsPro is a VS Code extension that shows how much of your Claude Code usage
-you've burned through — as a retro **health bar** with a little character riding
-on top. It answers the questions "how many tokens am I spending?" and "how long
-until my 5-hour window frees up?" without leaving your editor.
+StatsPro is a tiny **retro terminal app** that shows how much of your Claude Code
+usage you've burned through — a glowing **health bar** with a little character
+riding on top. Run it in its own small terminal window, tuck it into a corner of
+your screen, and glance over any time to see "how many tokens am I spending?" and
+"how long until my 5-hour window frees up?"
 
-It has two faces:
+```
+────────────────────────────────
+ STATSPRO                      ▓
+              🏃
+ ▐██████████████░░░░░░░░░░▌ 58%
+ opus-4.8 · 587k · 3h48m
+────────────────────────────────
+```
 
-- **Status bar strip** — an always-on mini bar in the bottom-right corner.
-  Terminal untouched, glanceable, out of the way.
+The character is **idle** 🧍 when you're calm, **running** 🏃 when you're busy,
+and **on fire** 🔥 as you approach the limit. It reads straight from your local
+Claude Code transcripts — no network, no account, nothing leaves your machine.
 
-  ```
-  🧍 ▰▰▰▰▱▱ 62% · opus-4.8 · 3h 12m left
-  ```
+## Run it
 
-- **Retro panel** — an animated webview (open with a command) where a character
-  runs on top of a big glowing bar, with flames when you're burning hard. 🔥
+```bash
+python3 statspro.py
+```
 
-Both read the same data straight from your local Claude Code transcripts
-(`~/.claude/projects/*/*.jsonl`) — no network, no account, nothing leaves your
-machine.
+That's it — no dependencies, just Python 3. Open a small terminal window, run it,
+and drag the window into a corner of your screen. `Ctrl-C` to quit.
+
+Flags: `--once` (draw one frame and exit), `--fps N` (animation speed).
+
+## Bonus: a Claude Code status-line mode
+
+Prefer it pinned to the bottom of your Claude Code terminal instead of a separate
+window? `statusline.py` renders the same bar as a Claude Code status line. Add to
+`~/.claude/settings.json`:
+
+```json
+{ "statusLine": { "type": "command", "command": "python3 /path/to/statusline.py" } }
+```
 
 ## What it shows
 
