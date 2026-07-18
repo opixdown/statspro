@@ -10,3 +10,4 @@ node_modules/**
 *.py
 *.command
 *.vsix
+assets/**

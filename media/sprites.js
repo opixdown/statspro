@@ -234,8 +234,28 @@
       },
     };
 
-    // personal skin (never in the public repo) — any group it defines
-    // overrides the built-in art; missing groups keep the fallback.
+    // 1st priority: sheets the user pasted into the assets folder — sliced
+    // live in the webview (see skin.js). Nothing to build or install.
+    if (window.STATSPRO_ASSETS && window.StatsProSkin) {
+      try {
+        const skin = await window.StatsProSkin.build(window.STATSPRO_ASSETS);
+        set.hero.idle = skin.heroIdle;
+        set.hero.run = skin.heroRun;
+        set.enemy.frames = skin.enemy;
+        set.gunner.frames = skin.gunner;
+        set.boss.frames = skin.boss;
+        set.fx.bullet = skin.fx.bullet;
+        set.fx.muzzle = skin.fx.muzzle;
+        set.fx.boom = skin.fx.boom;
+        set.fx.death = skin.fx.death;
+        return set;
+      } catch (e) {
+        console.warn("statspro: runtime skin failed, falling back", e);
+      }
+    }
+
+    // 2nd: a pre-generated personal skin file (never in the public repo) —
+    // any group it defines overrides the built-in art.
     const local = window.STATSPRO_LOCAL_SPRITES;
     if (local) {
       const grab = async (keys) => {

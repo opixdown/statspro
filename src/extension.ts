@@ -1,6 +1,8 @@
 /** StatsPro extension entrypoint: the docked sidebar webview, on a timer. */
 
+import * as fs from "fs";
 import * as vscode from "vscode";
+import { ensureDropFolder, watchDirs } from "./assets";
 import { detectPlan } from "./core/plan";
 import { gather, Stats, SlotMode, slotText } from "./core/stats";
 import { sessionFileForWorkspace } from "./core/transcripts";
@@ -8,6 +10,7 @@ import { HealthViewProvider } from "./panel";
 
 let provider: HealthViewProvider;
 let timer: NodeJS.Timeout | undefined;
+let watchers: fs.FSWatcher[] = [];
 
 /** Rough 5h-window token budgets per plan; `custom` uses tokenBudget5h. */
 const PLAN_BUDGETS: Record<string, number> = {
@@ -62,9 +65,40 @@ function restartTimer(): void {
   timer = setInterval(refresh, readConfig().refreshSeconds * 1000);
 }
 
+/** When sheets are pasted into (or removed from) an assets folder, the widget
+ *  rebuilds itself — the "paste the PNGs and it just works" path. */
+function watchAssetFolders(extensionPath: string): void {
+  for (const w of watchers) {
+    w.close();
+  }
+  watchers = [];
+  let debounce: NodeJS.Timeout | undefined;
+  for (const dir of watchDirs(extensionPath)) {
+    try {
+      const w = fs.watch(dir, (_event, filename) => {
+        if (filename && !String(filename).endsWith(".png")) {
+          return;
+        }
+        if (debounce) {
+          clearTimeout(debounce);
+        }
+        debounce = setTimeout(() => {
+          provider.rebuild();
+          refresh(true);
+        }, 600);
+      });
+      watchers.push(w);
+    } catch {
+      /* directory may vanish; fine */
+    }
+  }
+}
+
 export function activate(context: vscode.ExtensionContext): void {
+  ensureDropFolder(); // ~/.statspro/assets with a README.txt inside
   provider = new HealthViewProvider(context.extensionUri);
   provider.onBecameVisible = () => refresh(true);
+  watchAssetFolders(context.extensionUri.fsPath);
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(HealthViewProvider.viewType, provider, {
@@ -80,7 +114,8 @@ export function activate(context: vscode.ExtensionContext): void {
         restartTimer();
       }
     }),
-    { dispose: () => timer && clearInterval(timer) }
+    { dispose: () => timer && clearInterval(timer) },
+    { dispose: () => watchers.forEach((w) => w.close()) }
   );
 
   refresh();

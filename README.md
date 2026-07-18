@@ -1,119 +1,62 @@
-# StatsPro — your Claude Code usage, as a retro auto-battler
+# StatsPro
 
-StatsPro is a VS Code extension that turns your Claude Code token usage into a
-tiny **Contra-style game** that plays itself in your Source Control sidebar.
-
-The hero holds the left flank, running and gunning. Enemies charge in from the
-right; gunners dig in and fire back. **The "player" is your AI**: when Claude
-sits idle the front is quiet — when you work it hard, the firefight rages.
-Your rolling 5-hour token window is the level:
+Your Claude Code usage as a retro auto-battler, in the VS Code sidebar.
+The hero holds the line; enemies charge as you burn tokens; your rolling
+5-hour window is the level — boss at 85%, **STAGE CLEAR** at 100%.
+100% local: reads `~/.claude/projects` transcripts, nothing leaves your machine.
 
 ```
-  KILLS 023                              64%
-   🏃🔫 · · · ➤        👥    👥      👾
- ▐████████████████░░░░░░░░░░░░░▌
+  KILLS 023                          64%
+   🏃🔫 · · · ➤       👥    👥    👾
+ ▐████████████████░░░░░░░░░░░▌
  opus-4.8 · 587k · 3h48m
 ```
 
-- **The health bar** is your real 5-hour token window (orange → yellow → red)
-- **Waves** at 25% / 50% / 75% — squads crash in with arcade banners
-- **At 85%** the boss stalks in (`WARNING!!`)
-- **At 100%** you take it down — `STAGE CLEAR` 🏆 — and when your window
-  resets, the next stage begins
-- **Kill counter**, muzzle flashes, explosions, misses, hit flinches — a real
-  little firefight, paced by a Director that follows your smoothed burn rate
-
-Everything reads from your local Claude Code transcripts (`~/.claude/projects`)
-— no network, no account, nothing leaves your machine.
-
 ## Install
 
-**From a release (easiest):** grab `statspro-x.y.z.vsix` from
-[Releases](https://github.com/opixdown/statspro/releases), then:
+Download the `.vsix` from [Releases](https://github.com/opixdown/statspro/releases), then:
 
 ```bash
 code --install-extension statspro-0.1.0.vsix
 ```
 
-**From source:**
+Reload VS Code → open **Source Control** (`Ctrl/Cmd+Shift+G`) → StatsPro is there.
+
+Or from source:
 
 ```bash
-git clone https://github.com/opixdown/statspro.git
-cd statspro
-npm install
-npm run compile
+git clone https://github.com/opixdown/statspro.git && cd statspro
+npm install && npm run compile
 npx @vscode/vsce package --no-dependencies
 code --install-extension statspro-0.1.0.vsix
 ```
 
-Then reload VS Code and open the **Source Control** view (`Ctrl/Cmd+Shift+G`) —
-the **StatsPro** section is there. Drag its header to reorder; give it height
-and it breathes.
+## Classic sprites (optional)
+
+Ships with original pixel art. For the classic NES look, download these three
+sheets yourself (search "NES Contra" on a sprite archive) and paste them into
+`~/.statspro/assets/`:
+
+```
+enemies.png   Contra — Enemies & Bosses — Enemies & Obstacles
+bill.png      Contra — Bill (full player sheet)
+effects.png   Contra — effects (bullets, explosions, rings)
+```
+
+That's it — the widget notices and reloads itself in a couple of seconds.
+Delete the files to go back. Sheets stay on your machine: never committed,
+never shipped.
 
 ## Settings
 
-| Setting | Default | Meaning |
+| Setting | Default | |
 |---|---|---|
-| `statspro.plan` | `auto` | Your Claude plan → 5h token budget. `auto` detects it from Claude Code's own config. Presets: `pro` ≈ 1M, `max5x` ≈ 5M, `max20x` ≈ 10M, or `custom`. |
-| `statspro.tokenBudget5h` | `2000000` | Custom budget (only when `plan` is `custom`). |
-| `statspro.windowHours` | `5` | Length of the rolling usage window. |
-| `statspro.refreshSeconds` | `5` | How often usage is recomputed. |
-| `statspro.slots` | `["model","tokens_total","time_left_5h"]` | The three readouts under the bar. |
+| `statspro.plan` | `auto` | Detects your Claude plan (Pro / Max 5x / Max 20x) for the 5h budget; or set it yourself, or `custom` + `statspro.tokenBudget5h`. |
+| `statspro.slots` | model · tokens · time left | The three readouts under the bar. |
 
-**Slot modes:** `model`, `tokens_total`, `tokens_5h`, `time_left_5h`,
-`tok_per_min`, `context`.
+## Develop
 
-## How it works
+`node tests/sim.js` runs the headless game simulator (6 scenarios) — run it
+after any gameplay change.
 
-```
-~/.claude/projects/*/*.jsonl          (Claude Code transcripts, read incrementally)
-        │
-        ▼
-  src/core/transcripts.ts   parse + per-file byte-offset cache
-  src/core/stats.ts         session / 5h window / burn rate
-  src/core/plan.ts          auto-detect your plan from ~/.claude.json
-        │  {fillPct, tokPerMin} every 5s
-        ▼
-  media/director.js         usage → pacing: patrol/assault/lull, waves, boss
-  media/entities.js         hero, enemy types, bullets, booms (data-driven)
-  media/engine.js           canvas loop, entity lifecycle, the bar
-  media/sprites.js          pixel art loading (original art built in)
-```
-
-Token counting deliberately excludes `cache_read_input_tokens` — cache reads
-replay the whole context every turn and would peg the bar at 100%.
-
-## Tests
-
-A headless simulator drives the whole game logic in Node — no browser needed:
-
-```bash
-node tests/sim.js
-```
-
-Six scenarios (busy / idle / boss / win / stage-reset / 5000-tick soak) with
-invariant checks and pacing metrics. It has already caught real bugs; run it
-before sending a PR.
-
-## Art
-
-The repo ships **original pixel art** (a hand-drawn commando, palette-swapped
-grunts) — install and everything renders out of the box.
-
-Want the classic NES look on your own machine? Download the sprite sheets
-yourself, paste them into `assets/`, and run one command — full instructions in
-[`assets/README.md`](assets/README.md). Skins and sheets stay local: gitignored,
-never in releases.
-
-## Roadmap
-
-- [ ] More enemy types (grenades, jumpers, turrets) and hero poses
-- [ ] Alternate themes (Sonic-style runner, dino runner)
-- [ ] Weekly-limit meter alongside the 5-hour window
-- [ ] Auto-calibrate the budget from observed limit events
-- [ ] VS Code Marketplace listing
-
-## License
-
-MIT © 2026 opixdown. Bundled font: Press Start 2P (SIL OFL, see
-`media/OFL-PressStart2P.txt`).
+MIT © 2026 opixdown · Font: Press Start 2P (OFL)
