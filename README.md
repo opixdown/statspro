@@ -1,25 +1,41 @@
-# StatsPro — a retro token health bar for Claude Code
+# StatsPro — your Claude Code usage, as a retro auto-battler
 
-StatsPro is a VS Code extension that shows how much of your Claude Code usage
-you've burned through — a retro, animated **health bar** with a little character
-riding on top, docked right in your Source Control sidebar. Think *VSCode Pets,
-but it's your usage meter*.
+StatsPro is a VS Code extension that turns your Claude Code token usage into a
+tiny **Contra-style game** that plays itself in your Source Control sidebar.
+
+The hero holds the left flank, running and gunning. Enemies charge in from the
+right; gunners dig in and fire back. **The "player" is your AI**: when Claude
+sits idle the front is quiet — when you work it hard, the firefight rages.
+Your rolling 5-hour token window is the level:
 
 ```
-            🏃
- ▐██████████████░░░░░░░░░░▌ 58%
- opus-4.8 · 587k · 3h48m left
+  KILLS 023                              64%
+   🏃🔫 · · · ➤        👥    👥      👾
+ ▐████████████████░░░░░░░░░░░░░▌
+ opus-4.8 · 587k · 3h48m
 ```
 
-- **Health bar** — your rolling 5-hour token window, glowing orange → yellow → red
-- **Character** — idle 🧍 when you're calm, running 🏃 when you're busy,
-  on fire 🔥 as you approach the limit
-- **Three configurable slots** — model · session tokens · time left (swappable)
+- **The health bar** is your real 5-hour token window (orange → yellow → red)
+- **Waves** at 25% / 50% / 75% — squads crash in with arcade banners
+- **At 85%** the boss stalks in (`WARNING!!`)
+- **At 100%** you take it down — `STAGE CLEAR` 🏆 — and when your window
+  resets, the next stage begins
+- **Kill counter**, muzzle flashes, explosions, misses, hit flinches — a real
+  little firefight, paced by a Director that follows your smoothed burn rate
 
-It reads straight from your local Claude Code transcripts
-(`~/.claude/projects`) — no network, no account, nothing leaves your machine.
+Everything reads from your local Claude Code transcripts (`~/.claude/projects`)
+— no network, no account, nothing leaves your machine.
 
-## Install (from source)
+## Install
+
+**From a release (easiest):** grab `statspro-x.y.z.vsix` from
+[Releases](https://github.com/opixdown/statspro/releases), then:
+
+```bash
+code --install-extension statspro-0.1.0.vsix
+```
+
+**From source:**
 
 ```bash
 git clone https://github.com/opixdown/statspro.git
@@ -30,18 +46,19 @@ npx @vscode/vsce package --no-dependencies
 code --install-extension statspro-0.1.0.vsix
 ```
 
-Reload VS Code, open the **Source Control** view (`Ctrl/Cmd+Shift+G`), and the
-**StatsPro** section is there — drag its header wherever you like; VS Code
-remembers your layout.
+Then reload VS Code and open the **Source Control** view (`Ctrl/Cmd+Shift+G`) —
+the **StatsPro** section is there. Drag its header to reorder; give it height
+and it breathes.
 
 ## Settings
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `statspro.tokenBudget5h` | `1000000` | Tokens your 5-hour window is worth (drives the fill %). Tune to your plan. |
+| `statspro.plan` | `auto` | Your Claude plan → 5h token budget. `auto` detects it from Claude Code's own config. Presets: `pro` ≈ 1M, `max5x` ≈ 5M, `max20x` ≈ 10M, or `custom`. |
+| `statspro.tokenBudget5h` | `2000000` | Custom budget (only when `plan` is `custom`). |
 | `statspro.windowHours` | `5` | Length of the rolling usage window. |
-| `statspro.refreshSeconds` | `5` | How often to recompute usage. |
-| `statspro.slots` | `["model","tokens_total","time_left_5h"]` | The three readouts. |
+| `statspro.refreshSeconds` | `5` | How often usage is recomputed. |
+| `statspro.slots` | `["model","tokens_total","time_left_5h"]` | The three readouts under the bar. |
 
 **Slot modes:** `model`, `tokens_total`, `tokens_5h`, `time_left_5h`,
 `tok_per_min`, `context`.
@@ -49,23 +66,51 @@ remembers your layout.
 ## How it works
 
 ```
-~/.claude/projects/*/*.jsonl        (Claude Code transcripts)
+~/.claude/projects/*/*.jsonl          (Claude Code transcripts, read incrementally)
         │
         ▼
-  src/core/transcripts.ts   → parse lines, pull usage + timestamps
-  src/core/stats.ts         → tally session / 5h window / burn rate
-        │
+  src/core/transcripts.ts   parse + per-file byte-offset cache
+  src/core/stats.ts         session / 5h window / burn rate
+  src/core/plan.ts          auto-detect your plan from ~/.claude.json
+        │  {fillPct, tokPerMin} every 5s
         ▼
-  src/panel.ts + media/     → the retro animated sidebar widget
+  media/director.js         usage → pacing: patrol/assault/lull, waves, boss
+  media/entities.js         hero, enemy types, bullets, booms (data-driven)
+  media/engine.js           canvas loop, entity lifecycle, the bar
+  media/sprites.js          pixel art loading (original art built in)
 ```
+
+Token counting deliberately excludes `cache_read_input_tokens` — cache reads
+replay the whole context every turn and would peg the bar at 100%.
+
+## Tests
+
+A headless simulator drives the whole game logic in Node — no browser needed:
+
+```bash
+node tests/sim.js
+```
+
+Six scenarios (busy / idle / boss / win / stage-reset / 5000-tick soak) with
+invariant checks and pacing metrics. It has already caught real bugs; run it
+before sending a PR.
+
+## Art
+
+The repo ships **original pixel art** (a hand-drawn commando, palette-swapped
+grunts). The sprite loader also supports a personal, gitignored skin file
+(`media/sprites.local.js`) for your own machine — that file never ships and is
+excluded from releases.
 
 ## Roadmap
 
-- [ ] Real pixel-art character sprites (idle / running / burning)
-- [ ] Weekly-limit ring in addition to the 5-hour window
-- [ ] Auto-calibrate `tokenBudget5h` from observed resets
-- [ ] Publish to the VS Code Marketplace
+- [ ] More enemy types (grenades, jumpers, turrets) and hero poses
+- [ ] Alternate themes (Sonic-style runner, dino runner)
+- [ ] Weekly-limit meter alongside the 5-hour window
+- [ ] Auto-calibrate the budget from observed limit events
+- [ ] VS Code Marketplace listing
 
 ## License
 
-MIT © 2026 opixdown
+MIT © 2026 opixdown. Bundled font: Press Start 2P (SIL OFL, see
+`media/OFL-PressStart2P.txt`).

@@ -49,10 +49,16 @@
     "configuration": {
       "title": "StatsPro",
       "properties": {
+        "statspro.plan": {
+          "type": "string",
+          "enum": ["auto", "pro", "max5x", "max20x", "custom"],
+          "default": "auto",
+          "markdownDescription": "Your Claude plan — sets the 5-hour token budget. `auto` (default) detects it from Claude Code's own config. Presets (rough estimates): `pro` ≈ 1M, `max5x` ≈ 5M, `max20x` ≈ 10M. `custom` uses `#statspro.tokenBudget5h#`."
+        },
         "statspro.tokenBudget5h": {
           "type": "number",
-          "default": 1000000,
-          "markdownDescription": "How many tokens your 5-hour window is worth. Drives the health-bar fill %. Tune to match your plan (Pro / Max 5x / Max 20x)."
+          "default": 2000000,
+          "markdownDescription": "Custom 5-hour token budget. Only used when `#statspro.plan#` is `custom`."
         },
         "statspro.windowHours": {
           "type": "number",

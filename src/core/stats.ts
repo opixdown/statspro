@@ -56,26 +56,28 @@ export function gather(opts: GatherOptions): Stats {
   // --- current session ---
   let sessionTotal = 0;
   let sessionModel: string | null = null;
-  let tokPerMin = 0;
   if (opts.transcriptPath) {
     for (const e of readTranscript(opts.transcriptPath)) {
       sessionTotal += e.tokens;
       if (e.model) {
         sessionModel = e.model;
       }
-      if (e.ts !== null && e.ts >= oneMinAgo) {
-        tokPerMin += e.tokens;
-      }
     }
   }
 
-  // --- window across every project ---
+  // --- window + burn rate across every project (same scope for both,
+  // so the game's pacing tracks ALL your Claude work, not one window) ---
   let windowTotal = 0;
+  let tokPerMin = 0;
   let oldest: number | null = null;
   for (const file of allTranscripts()) {
-    for (const e of readTranscript(file)) {
+    // untouched-since-window-start files can't contribute; stat-only skip
+    for (const e of readTranscript(file, windowStart)) {
       if (e.ts !== null && e.ts >= windowStart) {
         windowTotal += e.tokens;
+        if (e.ts >= oneMinAgo) {
+          tokPerMin += e.tokens;
+        }
         if (oldest === null || e.ts < oldest) {
           oldest = e.ts;
         }

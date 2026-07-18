@@ -9,36 +9,27 @@
   <title>StatsPro</title>
 </head>
 <body>
-  <div class="crt">
-    <div class="scanlines"></div>
-
-    <header class="title">
-      <span class="logo">STATSPRO</span>
-      <span class="blink">▓</span>
-    </header>
-
-    <!-- character rides the top of the bar; left% is set from JS -->
+  <div class="hud">
     <div class="stage">
-      <div class="character" id="character" data-state="idle">
-        <div class="sprite">🧍</div>
-        <div class="flames" id="flames"></div>
-      </div>
-
-      <div class="bar">
-        <div class="fill" id="fill"></div>
-        <div class="ticks" id="ticks"></div>
-      </div>
-      <div class="pct" id="pct">--%</div>
+      <canvas id="game"></canvas>
+      <span class="kills" id="kills">KILLS 000</span>
+      <span class="pct" id="pct">--</span>
+      <div class="banner" id="banner"></div>
+      <div class="banner win" id="winbanner">STAGE&nbsp;CLEAR</div>
     </div>
 
-    <!-- three configurable readouts -->
-    <div class="slots">
-      <div class="slot"><span class="val" id="slot0-val">--</span><span class="lab" id="slot0-lab">model</span></div>
-      <div class="slot"><span class="val" id="slot1-val">--</span><span class="lab" id="slot1-lab">token</span></div>
-      <div class="slot"><span class="val" id="slot2-val">--</span><span class="lab" id="slot2-lab">time left</span></div>
+    <div class="readouts">
+      <span class="ro" id="slot0">--</span>
+      <span class="ro mid" id="slot1">--</span>
+      <span class="ro" id="slot2">--</span>
     </div>
   </div>
 
-  <script nonce="{{nonce}}" src="{{jsUri}}"></script>
+  {{localSprites}}
+  <script nonce="{{nonce}}" src="{{spritesUri}}"></script>
+  <script nonce="{{nonce}}" src="{{engineUri}}"></script>
+  <script nonce="{{nonce}}" src="{{entitiesUri}}"></script>
+  <script nonce="{{nonce}}" src="{{directorUri}}"></script>
+  <script nonce="{{nonce}}" src="{{mainUri}}"></script>
 </body>
 </html>

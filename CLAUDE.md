@@ -10,13 +10,19 @@ https://github.com/opixdown/statspro (branch `master`). Goal: open-source it,
 eventually publish to the VS Code Marketplace.
 
 ## The vision (settled after several iterations — don't relitigate)
-- **The product is the VS Code extension, only.** The widget docks in the
-  **Source Control (SCM) sidebar, ABOVE the git graph** — always visible,
-  aesthetic, classic/retro, animated.
-- Everything else was tried and **removed by the user's decision**: the VS Code
-  status-bar strip, the terminal TUI (`statspro.py`), the Claude Code status
-  line (`statusline.py`), a web artifact preview (was only a mock), bottom-panel
-  and Explorer docks. Don't resurrect them.
+- **The product is the VS Code extension, only** — docked in the **Source
+  Control (SCM) sidebar, ABOVE the git graph**.
+- **It's a game now**: a Contra-style auto-battler where the hero holds the
+  left flank and enemies invade from the right, paced by real usage (the AI is
+  the player). The 5h window is the level; boss at 85%; STAGE CLEAR at 100%.
+- Earlier forms tried and **removed by the user's decision**: status-bar strip,
+  terminal TUI, Claude Code status line, web preview, bottom-panel/Explorer
+  docks. Don't resurrect them.
+- **Sprites:** the public repo ships ONLY original art (in `media/sprites.js`).
+  The user's machine has a gitignored `media/sprites.local.js` with NES Contra
+  rips for personal use — it must NEVER be committed or shipped in a public
+  release vsix (build release artifacts with that file moved aside).
+- Future theme ideas the user wants someday: Sonic-style runner, dino runner.
 
 ## How it works
 Reads Claude Code transcripts at `~/.claude/projects/*/*.jsonl`. Each assistant
@@ -33,17 +39,23 @@ Numbers computed (src/core/stats.ts):
   to the user's real plan ceiling)
 
 ## Architecture
-- `src/extension.ts` — entrypoint; 5s timer; feeds the webview view
-- `src/core/transcripts.ts` — jsonl parsing (`sessionFileForWorkspace` maps a
-  workspace path to its `~/.claude/projects/<encoded>` dir by replacing `/` and
-  `.` with `-`)
-- `src/core/stats.ts` — tallies + 3 configurable "slots" (`statspro.slots`)
-- `src/panel.ts` — `WebviewViewProvider` (`statsproView`) registered in the
-  `scm` view container with `order: -100` (user still drags it above the graph
-  manually; VS Code persists that)
-- `media/panel.{html,css,js}` — the retro CRT look: scanlines, glowing bar
-  (orange→yellow→red at 60%/85%), character rides the fill edge, flames when
-  burning. Layout tuned for narrow sidebars (flex-wrap slots).
+- `src/extension.ts` — entrypoint; 5s timer (skips when view hidden); plan
+  presets (`statspro.plan`, auto-detected via `src/core/plan.ts` from
+  `~/.claude.json` → `oauthAccount.organizationRateLimitTier`)
+- `src/core/transcripts.ts` — jsonl parsing with an incremental per-file cache
+  (byte offsets; only appended bytes re-read; stat-only skip for stale files)
+- `src/core/stats.ts` — session / 5h-window / burn-rate tallies + 3 slots
+- `src/panel.ts` — `WebviewViewProvider` (`statsproView`) in the `scm`
+  container; injects `sprites.local.js` tag only if the file exists
+- `media/engine.js` — canvas loop (14fps ticks, clamped catch-up), entity
+  lifecycle, bar rendering
+- `media/entities.js` — Hero/Enemy/Bullet/Boom/Boss behaviors; `ENEMY_TYPES`
+  table is data-driven (add a row = new enemy)
+- `media/director.js` — usage → pacing brain: patrol/assault/lull rhythm,
+  EMA intensity, waves, boss fight, stage resets
+- `media/sprites.js` — art loading; original art inline as pixel grids
+- `tests/sim.js` — headless Node simulator (6 scenarios + soak): run
+  `node tests/sim.js` after ANY gameplay change; it catches real regressions.
 
 ## Build / install loop
 ```bash

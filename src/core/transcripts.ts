@@ -3,6 +3,11 @@
  *
  * Every assistant line carries a `message.usage` object and a `timestamp`; those
  * two things are the raw material for every number StatsPro shows.
+ *
+ * Reads are INCREMENTAL: per file we cache parsed entries plus the byte offset
+ * we've consumed. On refresh we stat() everything, re-read only appended bytes
+ * of files that grew, and skip untouched files entirely — so the 5-second poll
+ * costs a handful of stat calls, not a full re-parse of months of transcripts.
  */
 
 import * as fs from "fs";
@@ -15,7 +20,17 @@ export interface Entry {
   model: string | null;
 }
 
+interface CacheSlot {
+  size: number;
+  mtimeMs: number;
+  offset: number; // bytes fully parsed
+  carry: string; // trailing partial line
+  entries: Entry[];
+  lastMtimeMs: number; // newest entry timestamp proxy
+}
+
 const PROJECTS_DIR = path.join(os.homedir(), ".claude", "projects");
+const cache = new Map<string, CacheSlot>();
 
 function parseTs(ts: unknown): number | null {
   if (typeof ts !== "string") {
@@ -30,8 +45,8 @@ function messageTokens(usage: any): number {
     return 0;
   }
   // Count *new* work only: prompt + output + fresh cache writes. We deliberately
-  // exclude `cache_read_input_tokens` — those are the whole context re-read every
-  // turn, so they repeat and dwarf everything, which would peg the bar at 100%.
+  // exclude `cache_read_input_tokens` — those re-read the whole context every
+  // turn, repeat endlessly, and would peg the bar at 100%.
   return (
     (usage.input_tokens || 0) +
     (usage.output_tokens || 0) +
@@ -39,15 +54,8 @@ function messageTokens(usage: any): number {
   );
 }
 
-/** Parse one transcript file into a list of assistant-message entries. */
-export function readTranscript(file: string): Entry[] {
-  const out: Entry[] = [];
-  let text: string;
-  try {
-    text = fs.readFileSync(file, "utf8");
-  } catch {
-    return out;
-  }
+/** Parse whole lines out of a text chunk into entries. */
+function parseLines(text: string, into: Entry[]): void {
   for (const line of text.split("\n")) {
     if (!line.includes('"usage"')) {
       continue;
@@ -62,13 +70,75 @@ export function readTranscript(file: string): Entry[] {
     if (!msg.usage) {
       continue;
     }
-    out.push({
+    into.push({
       ts: parseTs(rec.timestamp),
       tokens: messageTokens(msg.usage),
       model: msg.model || null,
     });
   }
-  return out;
+}
+
+/**
+ * Entries for one transcript, incrementally maintained.
+ * `minMtimeMs`: if the file hasn't been touched since then AND we have a cache,
+ * the cached entries are returned without any file I/O beyond stat().
+ */
+export function readTranscript(file: string, minMtimeMs = 0): Entry[] {
+  let st: fs.Stats;
+  try {
+    st = fs.statSync(file);
+  } catch {
+    cache.delete(file);
+    return [];
+  }
+
+  const slot = cache.get(file);
+  if (slot && st.size === slot.size && st.mtimeMs === slot.mtimeMs) {
+    return slot.entries; // untouched
+  }
+  if (slot && st.mtimeMs < minMtimeMs) {
+    return slot.entries; // stale file, cached view is good enough
+  }
+
+  // grew in place: read only the appended bytes
+  if (slot && st.size > slot.size) {
+    try {
+      const fd = fs.openSync(file, "r");
+      const buf = Buffer.alloc(st.size - slot.offset);
+      fs.readSync(fd, buf, 0, buf.length, slot.offset);
+      fs.closeSync(fd);
+      const text = slot.carry + buf.toString("utf8");
+      const lastNl = text.lastIndexOf("\n");
+      parseLines(text.slice(0, lastNl + 1), slot.entries);
+      slot.carry = lastNl >= 0 ? text.slice(lastNl + 1) : text;
+      slot.offset = st.size;
+      slot.size = st.size;
+      slot.mtimeMs = st.mtimeMs;
+      return slot.entries;
+    } catch {
+      cache.delete(file); // fall through to full read
+    }
+  }
+
+  // full (re)read: new file, shrunk file, or failed incremental
+  const fresh: CacheSlot = {
+    size: st.size,
+    mtimeMs: st.mtimeMs,
+    offset: st.size,
+    carry: "",
+    entries: [],
+    lastMtimeMs: st.mtimeMs,
+  };
+  try {
+    const text = fs.readFileSync(file, "utf8");
+    const lastNl = text.lastIndexOf("\n");
+    parseLines(text.slice(0, lastNl + 1), fresh.entries);
+    fresh.carry = lastNl >= 0 ? text.slice(lastNl + 1) : text;
+  } catch {
+    return [];
+  }
+  cache.set(file, fresh);
+  return fresh.entries;
 }
 
 /**
