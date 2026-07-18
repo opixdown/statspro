@@ -41,7 +41,7 @@
   }
 
   /** Crop a box out of a sheet, strip backgrounds, trim, flip/scale. */
-  function cut(sheet, [x0, y0, x1, y1], flip, half) {
+  function cut(sheetName, sheet, [x0, y0, x1, y1], flip, half) {
     const w = x1 - x0;
     const h = y1 - y0;
     const c = document.createElement("canvas");
@@ -53,12 +53,19 @@
     const d = id.data;
 
     // background stripping: dark cells, light canvas, then the dominant
-    // remaining color if it covers enough area (the blue/red section plates)
+    // remaining color if it covers enough area (the blue/red section plates).
+    // The Bill sheet uses TWO background blues (plate + lighter checker) —
+    // strip that checker tone by range there (Bill's own pants are violet,
+    // far outside it).
     const counts = new Map();
     for (let i = 0; i < d.length; i += 4) {
       const r = d[i], g = d[i + 1], b = d[i + 2], a = d[i + 3];
       if (a === 0) continue;
       if ((r < 40 && g < 40 && b < 40) || (r > 195 && g > 195 && b > 195)) {
+        d[i + 3] = 0;
+        continue;
+      }
+      if (sheetName === "bill" && r < 60 && g < 110 && b > 80) {
         d[i + 3] = 0;
         continue;
       }
@@ -137,7 +144,7 @@
     const sheets = { enemies, bill, effects };
     const s = {};
     for (const [name, [sheet, box, flip, half]] of Object.entries(CUTS)) {
-      s[name] = cut(sheets[sheet], box, flip, half);
+      s[name] = cut(sheet, sheets[sheet], box, flip, half);
     }
     return {
       heroIdle: [s.heroA, s.heroB],
