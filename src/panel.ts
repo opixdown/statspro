@@ -1,4 +1,5 @@
-/** The retro animated webview: big bar + character running on top. */
+/** The retro animated health bar, as a WebviewView docked in the bottom panel
+ *  (right next to your Terminal tab, like the VSCode Pets cat). */
 
 import * as fs from "fs";
 import * as vscode from "vscode";
@@ -9,75 +10,47 @@ export interface PanelPayload {
   slots: { value: string; label: string }[];
 }
 
-export class HealthPanel {
-  public static current: HealthPanel | undefined;
-  private readonly panel: vscode.WebviewPanel;
-  private readonly extUri: vscode.Uri;
-  private disposables: vscode.Disposable[] = [];
-  private lastPayload: PanelPayload | undefined;
+export class HealthViewProvider implements vscode.WebviewViewProvider {
+  public static readonly viewType = "statsproView";
+  private view?: vscode.WebviewView;
+  private last?: PanelPayload;
 
-  static show(extUri: vscode.Uri): void {
-    if (HealthPanel.current) {
-      HealthPanel.current.panel.reveal(vscode.ViewColumn.Beside);
-      return;
-    }
-    const panel = vscode.window.createWebviewPanel(
-      "statsproPanel",
-      "StatsPro",
-      { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.joinPath(extUri, "media")],
+  constructor(private readonly extUri: vscode.Uri) {}
+
+  resolveWebviewView(view: vscode.WebviewView): void {
+    this.view = view;
+    view.webview.options = {
+      enableScripts: true,
+      localResourceRoots: [vscode.Uri.joinPath(this.extUri, "media")],
+    };
+    view.webview.html = this.html(view.webview);
+    view.webview.onDidReceiveMessage((m) => {
+      if (m?.type === "ready" && this.last) {
+        this.update(this.last);
       }
-    );
-    HealthPanel.current = new HealthPanel(panel, extUri);
-  }
-
-  private constructor(panel: vscode.WebviewPanel, extUri: vscode.Uri) {
-    this.panel = panel;
-    this.extUri = extUri;
-    this.panel.webview.html = this.html();
-    this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
-    // when the webview signals it's ready, push whatever we last computed
-    this.panel.webview.onDidReceiveMessage(
-      (m) => {
-        if (m?.type === "ready" && this.lastPayload) {
-          this.update(this.lastPayload);
-        }
-      },
-      null,
-      this.disposables
-    );
+    });
+    if (this.last) {
+      this.update(this.last);
+    }
   }
 
   update(payload: PanelPayload): void {
-    this.lastPayload = payload;
-    this.panel.webview.postMessage({ type: "stats", ...payload });
+    this.last = payload;
+    this.view?.webview.postMessage({ type: "stats", ...payload });
   }
 
-  private uri(...p: string[]): vscode.Uri {
-    return this.panel.webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extUri, "media", ...p)
-    );
+  private uri(webview: vscode.Webview, ...p: string[]): vscode.Uri {
+    return webview.asWebviewUri(vscode.Uri.joinPath(this.extUri, "media", ...p));
   }
 
-  private html(): string {
+  private html(webview: vscode.Webview): string {
     const htmlPath = vscode.Uri.joinPath(this.extUri, "media", "panel.html").fsPath;
-    let html = fs.readFileSync(htmlPath, "utf8");
+    const html = fs.readFileSync(htmlPath, "utf8");
     const nonce = String(Date.now()) + Math.floor(Math.random() * 1e6);
     return html
-      .replace(/{{cssUri}}/g, this.uri("panel.css").toString())
-      .replace(/{{jsUri}}/g, this.uri("panel.js").toString())
-      .replace(/{{cspSource}}/g, this.panel.webview.cspSource)
+      .replace(/{{cssUri}}/g, this.uri(webview, "panel.css").toString())
+      .replace(/{{jsUri}}/g, this.uri(webview, "panel.js").toString())
+      .replace(/{{cspSource}}/g, webview.cspSource)
       .replace(/{{nonce}}/g, nonce);
-  }
-
-  dispose(): void {
-    HealthPanel.current = undefined;
-    this.panel.dispose();
-    while (this.disposables.length) {
-      this.disposables.pop()?.dispose();
-    }
   }
 }

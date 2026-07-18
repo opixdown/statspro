@@ -20,7 +20,20 @@
     "health bar"
   ],
   "main": "./out/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "contributes": {
+    "views": {
+      "scm": [
+        {
+          "id": "statsproView",
+          "type": "webview",
+          "name": "StatsPro",
+          "order": -100
+        }
+      ]
+    },
     "commands": [
       {
         "command": "statspro.openPanel",

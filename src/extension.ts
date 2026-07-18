@@ -1,12 +1,13 @@
-/** StatsPro extension entrypoint: status bar + panel, refreshed on a timer. */
+/** StatsPro extension entrypoint: docked webview + status bar, on a timer. */
 
 import * as vscode from "vscode";
 import { gather, Stats, SlotMode, slotText } from "./core/stats";
 import { sessionFileForWorkspace } from "./core/transcripts";
 import { StatusBar } from "./statusBar";
-import { HealthPanel } from "./panel";
+import { HealthViewProvider } from "./panel";
 
 let statusBar: StatusBar;
+let provider: HealthViewProvider;
 let timer: NodeJS.Timeout | undefined;
 
 function readConfig() {
@@ -36,12 +37,8 @@ function refresh(): void {
     const cfg = readConfig();
     const stats = computeStats();
     statusBar.update(stats, cfg.slots);
-    HealthPanel.current?.update({
-      stats,
-      slots: cfg.slots.map((m) => slotText(m, stats)),
-    });
+    provider.update({ stats, slots: cfg.slots.map((m) => slotText(m, stats)) });
   } catch (e) {
-    // never let a bad read take down the extension
     console.error("StatsPro refresh failed:", e);
   }
 }
@@ -55,11 +52,14 @@ function restartTimer(): void {
 
 export function activate(context: vscode.ExtensionContext): void {
   statusBar = new StatusBar();
+  provider = new HealthViewProvider(context.extensionUri);
 
   context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(HealthViewProvider.viewType, provider, {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
     vscode.commands.registerCommand("statspro.openPanel", () => {
-      HealthPanel.show(context.extensionUri);
-      refresh();
+      vscode.commands.executeCommand("statsproView.focus");
     }),
     vscode.commands.registerCommand("statspro.refresh", refresh),
     vscode.workspace.onDidChangeConfiguration((e) => {
