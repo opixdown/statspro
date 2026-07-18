@@ -1,70 +1,44 @@
 # StatsPro — a retro token health bar for Claude Code
 
-StatsPro is a tiny **retro terminal app** that shows how much of your Claude Code
-usage you've burned through — a glowing **health bar** with a little character
-riding on top. Run it in its own small terminal window, tuck it into a corner of
-your screen, and glance over any time to see "how many tokens am I spending?" and
-"how long until my 5-hour window frees up?"
+StatsPro is a VS Code extension that shows how much of your Claude Code usage
+you've burned through — a retro, animated **health bar** with a little character
+riding on top, docked right in your Source Control sidebar. Think *VSCode Pets,
+but it's your usage meter*.
 
 ```
-────────────────────────────────
- STATSPRO                      ▓
-              🏃
+            🏃
  ▐██████████████░░░░░░░░░░▌ 58%
- opus-4.8 · 587k · 3h48m
-────────────────────────────────
+ opus-4.8 · 587k · 3h48m left
 ```
 
-The character is **idle** 🧍 when you're calm, **running** 🏃 when you're busy,
-and **on fire** 🔥 as you approach the limit. It reads straight from your local
-Claude Code transcripts — no network, no account, nothing leaves your machine.
+- **Health bar** — your rolling 5-hour token window, glowing orange → yellow → red
+- **Character** — idle 🧍 when you're calm, running 🏃 when you're busy,
+  on fire 🔥 as you approach the limit
+- **Three configurable slots** — model · session tokens · time left (swappable)
 
-## Run it
+It reads straight from your local Claude Code transcripts
+(`~/.claude/projects`) — no network, no account, nothing leaves your machine.
+
+## Install (from source)
 
 ```bash
-python3 statspro.py
-```
-
-That's it — no dependencies, just Python 3. Open a small terminal window, run it,
-and drag the window into a corner of your screen. `Ctrl-C` to quit.
-
-Flags: `--once` (draw one frame and exit), `--fps N` (animation speed).
-
-## Bonus: a Claude Code status-line mode
-
-Prefer it pinned to the bottom of your Claude Code terminal instead of a separate
-window? `statusline.py` renders the same bar as a Claude Code status line. Add to
-`~/.claude/settings.json`:
-
-```json
-{ "statusLine": { "type": "command", "command": "python3 /path/to/statusline.py" } }
-```
-
-## What it shows
-
-- **Health bar** — your rolling 5-hour token window, filling orange → yellow → red
-- **Character** — idle 🧍 / running 🏃 / burning 🔥 based on how hard you're working
-- **Three configurable slots** — by default `model`, `session tokens`, `time left`
-
-## Install (development)
-
-```bash
-git clone <your-repo-url> statspro
+git clone https://github.com/opixdown/statspro.git
 cd statspro
 npm install
 npm run compile
+npx @vscode/vsce package --no-dependencies
+code --install-extension statspro-0.1.0.vsix
 ```
 
-Then open the folder in VS Code and press **F5** ("Run StatsPro Extension").
-A second VS Code window opens with the extension loaded — look at the
-bottom-right status bar, and run **"StatsPro: Open Health Bar Panel"** from the
-Command Palette (⇧⌘P) for the retro view.
+Reload VS Code, open the **Source Control** view (`Ctrl/Cmd+Shift+G`), and the
+**StatsPro** section is there — drag its header wherever you like; VS Code
+remembers your layout.
 
 ## Settings
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `statspro.tokenBudget5h` | `2000000` | Tokens your 5-hour window is worth (drives the fill %). Tune to your plan. |
+| `statspro.tokenBudget5h` | `1000000` | Tokens your 5-hour window is worth (drives the fill %). Tune to your plan. |
 | `statspro.windowHours` | `5` | Length of the rolling usage window. |
 | `statspro.refreshSeconds` | `5` | How often to recompute usage. |
 | `statspro.slots` | `["model","tokens_total","time_left_5h"]` | The three readouts. |
@@ -78,16 +52,16 @@ Command Palette (⇧⌘P) for the retro view.
 ~/.claude/projects/*/*.jsonl        (Claude Code transcripts)
         │
         ▼
-  core/transcripts.ts   → parse lines, pull usage + timestamps
-  core/stats.ts         → tally session / 5h window / burn rate
+  src/core/transcripts.ts   → parse lines, pull usage + timestamps
+  src/core/stats.ts         → tally session / 5h window / burn rate
         │
-        ├── statusBar.ts → the always-on strip
-        └── panel.ts + media/ → the retro animated webview
+        ▼
+  src/panel.ts + media/     → the retro animated sidebar widget
 ```
 
 ## Roadmap
 
-- [ ] Drop-in custom character sprites (idle / running / burning art)
+- [ ] Real pixel-art character sprites (idle / running / burning)
 - [ ] Weekly-limit ring in addition to the 5-hour window
 - [ ] Auto-calibrate `tokenBudget5h` from observed resets
 - [ ] Publish to the VS Code Marketplace

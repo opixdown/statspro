@@ -10,17 +10,13 @@ https://github.com/opixdown/statspro (branch `master`). Goal: open-source it,
 eventually publish to the VS Code Marketplace.
 
 ## The vision (settled after several iterations — don't relitigate)
-- **Main product: the VS Code extension.** The user works in VS Code and wants
-  the widget docked in the **Source Control (SCM) sidebar, ABOVE the git graph**
-  — always visible, aesthetic, classic/retro, animated.
-- A tiny always-on strip also lives in the VS Code **status bar** (bottom-right).
-- Terminal versions exist as **secondary modes**, not the MVP:
-  - `statspro.py` — standalone animated TUI (own terminal window, zero deps)
-  - `statusline.py` — Claude Code status line (currently wired into
-    `~/.claude/settings.json` on the owner's machine)
-- Earlier detours (rejected): web artifact preview (was only a mock), bottom
-  panel dock (too short), Explorer dock (user wants SCM), separate terminal
-  window as primary (user wants it inside their working surface).
+- **The product is the VS Code extension, only.** The widget docks in the
+  **Source Control (SCM) sidebar, ABOVE the git graph** — always visible,
+  aesthetic, classic/retro, animated.
+- Everything else was tried and **removed by the user's decision**: the VS Code
+  status-bar strip, the terminal TUI (`statspro.py`), the Claude Code status
+  line (`statusline.py`), a web artifact preview (was only a mock), bottom-panel
+  and Explorer docks. Don't resurrect them.
 
 ## How it works
 Reads Claude Code transcripts at `~/.claude/projects/*/*.jsonl`. Each assistant
@@ -29,7 +25,7 @@ line has `message.usage` + `timestamp`. **Token counting rule:** count
 `cache_read_input_tokens`** (cache reads repeat the whole context every turn and
 would peg the bar at 100% — this was a real bug, keep the exclusion).
 
-Numbers computed (src/core/stats.ts, mirrored in the .py files):
+Numbers computed (src/core/stats.ts):
 - session total tokens (newest transcript for the workspace)
 - rolling 5h-window total across ALL projects
 - burn rate (tokens in last 60s), time until window frees up
@@ -37,12 +33,11 @@ Numbers computed (src/core/stats.ts, mirrored in the .py files):
   to the user's real plan ceiling)
 
 ## Architecture
-- `src/extension.ts` — entrypoint; 5s timer; wires status bar + webview view
+- `src/extension.ts` — entrypoint; 5s timer; feeds the webview view
 - `src/core/transcripts.ts` — jsonl parsing (`sessionFileForWorkspace` maps a
   workspace path to its `~/.claude/projects/<encoded>` dir by replacing `/` and
   `.` with `-`)
 - `src/core/stats.ts` — tallies + 3 configurable "slots" (`statspro.slots`)
-- `src/statusBar.ts` — mini bar `🧍 ▰▰▰▰▱▱ 62% · opus-4.8 · 3h 12m`
 - `src/panel.ts` — `WebviewViewProvider` (`statsproView`) registered in the
   `scm` view container with `order: -100` (user still drags it above the graph
   manually; VS Code persists that)

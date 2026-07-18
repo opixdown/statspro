@@ -1,12 +1,10 @@
-/** StatsPro extension entrypoint: docked webview + status bar, on a timer. */
+/** StatsPro extension entrypoint: the docked sidebar webview, on a timer. */
 
 import * as vscode from "vscode";
 import { gather, Stats, SlotMode, slotText } from "./core/stats";
 import { sessionFileForWorkspace } from "./core/transcripts";
-import { StatusBar } from "./statusBar";
 import { HealthViewProvider } from "./panel";
 
-let statusBar: StatusBar;
 let provider: HealthViewProvider;
 let timer: NodeJS.Timeout | undefined;
 
@@ -36,7 +34,6 @@ function refresh(): void {
   try {
     const cfg = readConfig();
     const stats = computeStats();
-    statusBar.update(stats, cfg.slots);
     provider.update({ stats, slots: cfg.slots.map((m) => slotText(m, stats)) });
   } catch (e) {
     console.error("StatsPro refresh failed:", e);
@@ -51,7 +48,6 @@ function restartTimer(): void {
 }
 
 export function activate(context: vscode.ExtensionContext): void {
-  statusBar = new StatusBar();
   provider = new HealthViewProvider(context.extensionUri);
 
   context.subscriptions.push(
@@ -68,8 +64,7 @@ export function activate(context: vscode.ExtensionContext): void {
         restartTimer();
       }
     }),
-    { dispose: () => timer && clearInterval(timer) },
-    statusBar
+    { dispose: () => timer && clearInterval(timer) }
   );
 
   refresh();
