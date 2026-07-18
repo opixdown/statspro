@@ -6,3 +6,6 @@ out/
 
 # personal sprite skins never ship
 media/sprites.local.js
+
+# user-provided sprite sheets (never committed)
+assets/*.png
