@@ -100,11 +100,10 @@ before sending a PR.
 The repo ships **original pixel art** (a hand-drawn commando, palette-swapped
 grunts) — install and everything renders out of the box.
 
-The sprite loader also supports a personal, gitignored skin
-(`media/sprites.local.js`) for your own machine. If you own/obtain classic NES
-sprite sheets yourself, drop them into `assets/` and run
-`python3 assets/build_skin.py` to generate your private skin — see that file's
-docstring. Skins and sheets are never committed and never ship in releases.
+Want the classic NES look on your own machine? Download the sprite sheets
+yourself, paste them into `assets/`, and run one command — full instructions in
+[`assets/README.md`](assets/README.md). Skins and sheets stay local: gitignored,
+never in releases.
 
 ## Roadmap
 
