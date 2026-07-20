@@ -44,12 +44,6 @@ That's it — the widget notices and reloads itself in a couple of seconds.
 Delete the files to go back. Sheets stay on your machine: never committed,
 never shipped.
 
-## Settings
-
-| Setting | Default | |
-|---|---|---|
-| `statspro.plan` | `auto` | Detects your Claude plan (Pro / Max 5x / Max 20x) for the 5h budget; or set it yourself, or `custom` + `statspro.tokenBudget5h`. |
-| `statspro.slots` | model · tokens · time left | The three readouts under the bar. |
 
 ## Develop
 
