@@ -47,7 +47,7 @@ never shipped.
 
 ## Develop
 
-`node tests/sim.js` runs the headless game simulator (6 scenarios) — run it
+`node tests/sim.js` runs the headles game simulator (6 scenarios) — run it
 after any gameplay change.
 
 MIT © 2026 opixdown · Font: Press Start 2P (OFL)
