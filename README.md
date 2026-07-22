@@ -35,7 +35,7 @@ and paste them into
 `~/.statspro/assets/`:
 
 ```
-enemies.png   Contra — Enemies & Bosses — Enemies & Obstacles
+enemies.png   Contra — Enemies & Boss — Enemies & Obstacles
 bill.png      Contra — Bill (full player sheet)
 effects.png   Contra — effects (bullets, explosions, rings)
 ```
