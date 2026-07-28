@@ -27,7 +27,7 @@ npx @vscode/vsce package --no-dependencies
 code --install-extension statspro-0.1.0.vsix
 ```
 
-## Classic sprites (optional)
+## Classic sprites 
 
 Ships with original pixel art.
 Download it here: https://limewire.com/d/6Z7Gm#ZH9xmh8Ep5
