@@ -2,7 +2,7 @@
 
 Your Claude Code usage as a retro auto-battler, in the VS Code sidebar.
 The hero holds the line; enemies charge as you burn tokens; your rolling
-5-hour window is the level — boss at 85%, **STAGE CLEAR** at 100%.
+5-hour window is the level boss at 85%, **STAGE CLEAR** at 100%.
 100% local: reads `~/.claude/projects` transcripts, nothing leaves your machin.
 
 <img width="298" height="159" alt="image" src="https://github.com/user-attachments/assets/37b83e0f-4e7b-4762-b185-dd7d93524627" />
